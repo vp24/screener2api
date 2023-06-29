@@ -46,63 +46,65 @@ async function getFirstLinkFromGoogleSearch(query) {
 }
 
 app.get("/api/scrape", async (req, res) => {
-  try {
-    const { query } = req.query;
-    const scrapeLink = query
-      ? query
-      : "https://www.marketscreener.com/quote/stock/KELLOGG-COMPANY-13226/finances/";
-
-    const response = await axios.get(scrapeLink);
-    const html = response.data;
-    const $ = cheerio.load(html);
-
-    const tables = ["valuationTable", "iseTableA", "bsTable"]; // Added "bsTable"
-    const pr10Elements = $(".pr-10");
-    let pr10Texts = [];
-    pr10Elements.each(function () {
-      const text = $(this).text().trim();
-      pr10Texts.push(text);
-    });
-    const scrapedData = [];
-
-    for (let i = 0; i < tables.length; i++) {
-      const tableID = tables[i];
-      const table = $("#" + tableID);
-      const tableRows = table.find("tr");
-      const tableData = [];
-
-      tableRows.each(function () {
-        const cells = $(this).find("th, td");
-        let cellTexts = cells
-          .map(function () {
-            let cellText = $(this).text().trim();
-            cellText = cellText.replace(/capitalization/i, 'Mkt Cap');
-            
-            cellText = cellText.replace(/\s+/g, " ");
-            cellText = cellText.replace(/,/g, ".");
-            cellText = cellText.replace(/(\d) (\d)/g, "$1,$2");
-            return cellText;
-          })
-          .get();
-        
-        cellTexts = cellTexts.map(text => text === 'Capitalization' ? 'Mkt Cap' : text);
-      
-        tableData.push(cellTexts);
+    try {
+      const { query } = req.query;
+      const scrapeLink = query
+        ? query
+        : "https://www.marketscreener.com/quote/stock/KELLOGG-COMPANY-13226/finances/";
+  
+      const response = await axios.get(scrapeLink);
+      const html = response.data;
+      const $ = cheerio.load(html);
+  
+      const tables = ["valuationTable", "iseTableA", "bsTable"]; // Added "bsTable"
+      const pr10Elements = $(".pr-10");
+      let pr10Texts = [];
+      pr10Elements.each(function () {
+        const text = $(this).text().trim();
+        if (text !== '') {
+          pr10Texts.push(text);
+        }
       });
-
-      scrapedData.push({
-        tableID,
-        tableData,
-        pr10Text: pr10Texts[i],
-      });
+      const scrapedData = [];
+  
+      for (let i = 0; i < tables.length; i++) {
+        const tableID = tables[i];
+        const table = $("#" + tableID);
+        const tableRows = table.find("tr");
+        const tableData = [];
+  
+        tableRows.each(function () {
+          const cells = $(this).find("th, td");
+          let cellTexts = cells
+            .map(function () {
+              let cellText = $(this).text().trim();
+              cellText = cellText.replace(/capitalization/i, 'Mkt Cap');
+              cellText = cellText.replace(/\s+/g, " ");
+              cellText = cellText.replace(/,/g, ".");
+              cellText = cellText.replace(/(\d) (\d)/g, "$1,$2");
+              return cellText;
+            })
+            .get();
+  
+          cellTexts = cellTexts.map(text => text === 'Capitalization' ? 'Mkt Cap' : text);
+  
+          tableData.push(cellTexts);
+        });
+  
+        scrapedData.push({
+          tableID,
+          tableData,
+          pr10Text: pr10Texts[i],
+        });
+      }
+  
+      res.json(scrapedData);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal Server Error" });
     }
-
-    res.json(scrapedData);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
+  });
+  
 
 app.get("/api/yahoo", async (req, res) => {
   try {

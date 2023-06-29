@@ -1,57 +1,66 @@
+// External dependencies
 const express = require("express");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const cors = require("cors");
 
+// App constants
+const API_KEY = "AIzaSyARwDLgkZBMtI-mFiVjzuZiRsnacuqpEsE";
+const SEARCH_ENGINE_ID = "d4523b55004334059";
+const GOOGLE_API_URL = "https://www.googleapis.com/customsearch/v1";
+const SCRAPE_API_URL = 'http://localhost:3001/api/scrape';
+const PORT = 3001;
+
+// App initializations
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const apiKey = "AIzaSyARwDLgkZBMtI-mFiVjzuZiRsnacuqpEsE";
-const searchEngineId = "d4523b55004334059";
+// Functions
+const getFirstLinkFromGoogleSearch = async (query) => {
+  const response = await axios.get(GOOGLE_API_URL, {
+    params: {
+      q: `${query} marketscreener`,
+      cx: SEARCH_ENGINE_ID,
+      key: API_KEY,
+    },
+  });
 
-app.post("/search", async (req, res) => {
+  const firstLink = response.data.items.find((result) => result.link.includes("marketscreener.com")).link;
+  return `${firstLink}finances/`;
+};
+
+// Routes
+app.post("/search", async (req, res, next) => {
+  const { query } = req.body;
+  
+  if (!query) {
+    return res.status(400).json({ message: "Missing query parameter" });
+  }
+  
   try {
-    const { query } = req.body;
     const result = await getFirstLinkFromGoogleSearch(query);
-    res.status(200).json({ message: "Success", result });
+    if (result) {
+      return res.status(200).json({ message: "Success", result });
+    } else {
+      return res.status(404).json({ message: "No results found for the query" });
+    }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
+    next(error);
   }
 });
 
-async function getFirstLinkFromGoogleSearch(query) {
-  const searchQuery = `${query} marketscreener`;
 
-  const response = await axios.get(
-    "https://www.googleapis.com/customsearch/v1",
-    {
-      params: {
-        q: searchQuery,
-        cx: searchEngineId,
-        key: apiKey,
-      },
-    }
-  );
-
-  const searchResults = response.data.items;
-  const firstLink = searchResults.find((result) =>
-    result.link.includes("marketscreener.com")
-  ).link;
-
-  const scrapeLink = `${firstLink}finances/`;
-
-  return scrapeLink;
-}
-
-app.get("/api/scrape", async (req, res) => {
+app.get("/api/scrape", async (req, res, next) => {
     try {
       const { query } = req.query;
-      const scrapeLink = query
-        ? query
-        : "https://www.marketscreener.com/quote/stock/KELLOGG-COMPANY-13226/finances/";
-  
+
+      if (!query) {
+        return res.status(400).json({ error: 'No query provided' });
+      }
+
+      const scrapeLink = query;
+
       const response = await axios.get(scrapeLink);
       const html = response.data;
       const $ = cheerio.load(html);
@@ -106,7 +115,7 @@ app.get("/api/scrape", async (req, res) => {
   });
   
 
-app.get("/api/yahoo", async (req, res) => {
+app.get("/api/yahoo", async (req, res, next) => {
   try {
     const { query } = req.query;
     const yahooData = await getYahooStuff(query);
@@ -148,7 +157,13 @@ async function getYahooStuff(query) {
   return { epsTrend, growthEstimates };
 }
 
-const port = 3001;
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Internal Server Error');
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
 });
