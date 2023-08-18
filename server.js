@@ -1,5 +1,7 @@
-// External dependencies
 const express = require("express");
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const axios = require("axios");
 const cheerio = require("cheerio");
 const cors = require("cors");
@@ -15,6 +17,52 @@ const PORT = 3001;
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// MongoDB Connection
+mongoose.connect('mongodb+srv://vp:klmklm24@cluster0.ijoz1wp.mongodb.net/', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
+const userSchema = new mongoose.Schema({
+  username: String,
+  password: String,
+});
+
+const User = mongoose.model('User', userSchema);
+
+// Authentication routes:
+
+app.post('/signup', async (req, res) => {
+  const { username, password } = req.body;
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  try {
+    const newUser = new User({ username, password: hashedPassword });
+    await newUser.save();
+    res.status(201).json({ message: 'User registered successfully!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/signin', async (req, res) => {
+  const { username, password } = req.body;
+  const user = await User.findOne({ username });
+
+  if (!user) {
+    return res.status(400).json({ error: 'Invalid username or password' });
+  }
+
+  const validPassword = await bcrypt.compare(password, user.password);
+
+  if (!validPassword) {
+    return res.status(400).json({ error: 'Invalid username or password' });
+  }
+
+  const token = jwt.sign({ id: user._id }, 'snekKey', { expiresIn: '1h' });
+  res.json({ token });
+});
 
 // Functions
 const getFirstLinkFromGoogleSearch = async (query) => {
