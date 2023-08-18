@@ -10,7 +10,6 @@ const cors = require("cors");
 const API_KEY = "AIzaSyARwDLgkZBMtI-mFiVjzuZiRsnacuqpEsE";
 const SEARCH_ENGINE_ID = "d4523b55004334059";
 const GOOGLE_API_URL = "https://www.googleapis.com/customsearch/v1";
-const SCRAPE_API_URL = 'http://localhost:3001/api/scrape';
 const PORT = process.env.PORT || 3001;
 
 
