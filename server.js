@@ -41,11 +41,13 @@ app.post('/signup', async (req, res) => {
   try {
     const newUser = new User({ username, password: hashedPassword });
     await newUser.save();
+    console.log(`User ${username} registered successfully!`); // Backend confirmation
     res.status(201).json({ message: 'User registered successfully!' });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 app.post('/signin', async (req, res) => {
   const { username, password } = req.body;
