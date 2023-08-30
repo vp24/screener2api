@@ -62,7 +62,7 @@ app.post('/signin', async (req, res) => {
     return res.status(400).json({ error: 'Invalid username or password' });
   }
 
-  const token = jwt.sign({ id: user._id }, 'snekKey', { expiresIn: '1h' });
+  const token = jwt.sign({ id: user._id }, 'snekKey', { expiresIn: '2h' });
   res.json({ token });
 });
 
