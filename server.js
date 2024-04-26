@@ -12,16 +12,16 @@ const SEARCH_ENGINE_ID = "d4523b55004334059";
 const GOOGLE_API_URL = "https://www.googleapis.com/customsearch/v1";
 const PORT = process.env.PORT || 3000;
 
-
 // App initializations
 const app = express();
 const corsOptions = {
-  origin: '*', // Allow all origins
-  optionsSuccessStatus: 200 
+  origin: 'https://screener-2.onrender.com', // Allow specific origin
+  optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
 
 app.use(express.json());
+
 
 // MongoDB Connection
 mongoose.connect('mongodb+srv://vp:klmklm24@cluster0.ijoz1wp.mongodb.net/', {
