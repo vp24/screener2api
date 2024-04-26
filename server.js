@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 3000;
 // App initializations
 const app = express();
 const corsOptions = {
-  origin: 'https://screener-2.onrender.com', // Allow specific origin
+  origin: ['https://screener-2.onrender.com', 'https://screener-api.onrender.com'],
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
